@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 개발 오피스</title>
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AI 오피스">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#e2e8f0;--pri:#2563eb;--pri-t:#fff;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--soft:#eef2ff;--bubble:#f1f5f9}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1120;--card:#111827;--text:#e5e7eb;--muted:#94a3b8;--line:#1f2937;--pri:#3b82f6;--soft:#172554;--bubble:#1e293b}}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+.hidden{display:none!important}
+/* 로그인 */
+#login{max-width:380px;margin:12vh auto 0;padding:0 16px}
+#login h1{font-size:24px;margin:0 0 4px}#login p{color:var(--muted);margin:0 0 24px}
+.field{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:10px}
+.btn{border:0;border-radius:10px;padding:11px 16px;background:var(--pri);color:var(--pri-t);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:var(--bad)}.btn.ok{background:var(--ok)}.btn.sm{padding:7px 12px;font-size:13px}
+.btn:disabled{opacity:.5}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+/* 앱 */
+#app{display:flex;flex-direction:column;height:100%;max-width:720px;margin:0 auto}
+header{padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;background:var(--card);border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:8px}.sp{flex:1}
+.title{font-weight:700;font-size:17px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bad);display:inline-block}.dot.on{background:var(--ok);box-shadow:0 0 0 3px #16a34a33}
+.pcstate{font-size:12px;color:var(--muted)}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
+.chip{flex:none;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--bubble);color:var(--muted);white-space:nowrap}
+.chip b{color:var(--text)}.chip.rest{background:#fef3c7;color:#92400e}.chip.rest b{color:#92400e}
+nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:10px 0 8px;color:var(--muted);font-size:12px;cursor:pointer}
+nav button.on{color:var(--pri);font-weight:700}
+nav i{display:block;font-style:normal;font-size:19px;line-height:1.2}
+main{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;padding:12px 16px}
+/* 채널 */
+#chan{display:flex;flex-direction:column;padding:0}
+#msgs{flex:1;overflow-y:auto;padding:12px 16px}
+.msg{margin:0 0 8px;max-width:88%}
+.msg .who{font-size:12px;color:var(--muted);margin-bottom:2px}
+.msg .b{background:var(--bubble);padding:8px 11px;border-radius:12px 12px 12px 4px;white-space:pre-wrap;word-break:break-word}
+.msg.me{margin-left:auto}.msg.me .who{text-align:right}.msg.me .b{background:var(--pri);color:#fff;border-radius:12px 12px 4px 12px}
+.msg.sys .b{background:transparent;border:1px dashed var(--line);color:var(--muted);font-size:13px}
+.msg.alert .b{background:#fef2f2;color:#991b1b}.msg.swap .b{background:#fffbeb;color:#92400e}
+.msg .t{font-size:11px;color:var(--muted);margin-top:2px}
+.composer{border-top:1px solid var(--line);background:var(--card);padding:8px 12px}
+.composer .row{gap:6px}
+.composer textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--bg);max-height:120px}
+.composer select,.composer input[type=text]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--bg);font-size:13px;min-width:0}
+.opt{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.stopbar{display:flex;gap:8px;align-items:center;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--line);font-size:13px}
+/* 보드 */
+.col h3{font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
+.card .p{font-weight:700}.card .s{font-size:13px;color:var(--muted)}
+.badge{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--bubble);color:var(--muted);white-space:nowrap}
+.badge.wait{background:#fef3c7;color:#92400e}.badge.run{background:#dbeafe;color:#1e40af}.badge.done{background:#dcfce7;color:#166534}.badge.bad{background:#fee2e2;color:#991b1b}
+.empty{color:var(--muted);text-align:center;padding:30px 0}
+/* 상세 시트 */
+#sheet{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:10}
+#sheet .in{background:var(--card);width:100%;max-width:720px;margin:0 auto;border-radius:16px 16px 0 0;max-height:88vh;overflow-y:auto;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0}
+.tabs button{flex:none;border:1px solid var(--line);background:none;border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+pre.doc{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-radius:10px;padding:12px;font:13px/1.5 ui-monospace,Consolas,monospace;margin:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* 오피스 */
+.floor{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.floor h3{margin:0 0 10px;font-size:13px;color:var(--muted)}
+.desks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.desk{text-align:center;position:relative;padding-top:6px}
+.ava{width:52px;height:52px;border-radius:50%;margin:0 auto 4px;display:grid;place-items:center;font-size:26px;background:var(--bubble);position:relative}
+.desk.work .ava{animation:bob 1.2s ease-in-out infinite;background:var(--soft)}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.name{font-weight:700;font-size:13px}.role{font-size:11px;color:var(--muted)}
+.eng{display:inline-block;font-size:10px;margin-top:3px;padding:1px 6px;border-radius:999px;background:var(--bubble);color:var(--muted)}
+.eng.swap{background:#fef3c7;color:#92400e}
+.say{font-size:11px;background:var(--pri);color:#fff;border-radius:8px;padding:3px 6px;margin:0 auto 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;z-index:20;max-width:90vw}
+</style>
+</head>
+<body>
+
+<section id="login" class="hidden">
+  <h1>AI 개발 오피스</h1>
+  <p>대표 계정으로 로그인하세요.</p>
+  <input id="email" class="field" type="email" placeholder="이메일" autocomplete="username">
+  <input id="pw" class="field" type="password" placeholder="비밀번호" autocomplete="current-password">
+  <div id="loginErr" class="err"></div>
+  <button id="loginBtn" class="btn" style="width:100%">로그인</button>
+</section>
+
+<section id="app" class="hidden">
+  <header>
+    <div class="row">
+      <span id="pcDot" class="dot"></span>
+      <span class="title">AI 개발 오피스</span>
+      <span class="sp"></span>
+      <span id="pcState" class="pcstate">PC 확인 중…</span>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main>
+    <div id="chan" class="view">
+      <div class="stopbar">
+        <span id="busy" class="sp">대기 중</span>
+        <button class="btn ghost sm" id="resumeBtn">재개</button>
+        <button class="btn danger sm" id="stopBtn">긴급 정지</button>
+      </div>
+      <div id="msgs"></div>
+      <div class="composer">
+        <div class="row" style="margin-bottom:6px">
+          <select id="projSel"></select>
+          <input id="projNew" type="text" class="hidden" placeholder="새 프로젝트(영문)" style="flex:1">
+          <label class="opt"><input type="checkbox" id="quality">품질 우선</label>
+        </div>
+        <div class="row">
+          <textarea id="text" rows="1" placeholder="지시를 입력하세요 (예: 가계부 앱 만들어줘)"></textarea>
+          <button class="btn" id="sendBtn">보내기</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="board" class="view hidden"></div>
+    <div id="office" class="view hidden"></div>
+  </main>
+
+  <nav>
+    <button data-v="chan" class="on"><i>💬</i>지시 채널</button>
+    <button data-v="board"><i>🗂️</i>작업 보드</button>
+    <button data-v="office"><i>🏢</i>오피스</button>
+    <button id="logoutBtn"><i>⎋</i>로그아웃</button>
+  </nav>
+</section>
+
+<div id="sheet" class="hidden"><div class="in" id="sheetIn"></div></div>
+
+<script>
+// ===== 설정 (공개용 키: 데이터는 로그인한 대표 본인만 볼 수 있음) =====
+const SUPABASE_URL = 'https://obvrqbwtssqeujjcunzm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_27lX6EML_5RYjq8fK1JbYw_iw_Sf7Sq';
+
+const STAFF = [
+  { id: 'secretary', name: '비서', role: '업무 분류', ava: '🧑‍💼', floor: 1 },
+  { id: 'pm', name: '기획자', role: '기능 정리', ava: '🧑‍🏫', floor: 1 },
+  { id: 'designer', name: '디자이너', role: '화면 규칙', ava: '🎨', floor: 1 },
+  { id: 'developer', name: '개발자', role: '코드 작성', ava: '👩‍💻', floor: 2 },
+  { id: 'qa', name: '테스터', role: '오류 분석', ava: '🔍', floor: 2 },
+  { id: 'reviewer', name: '리뷰어', role: '품질·보안', ava: '🛡️', floor: 2 },
+];
+const NAME2ID = Object.fromEntries(STAFF.map(s => [s.name, s.id]));
+const ENGINE_LABEL = { claude: 'Claude', antigravity: 'Antigravity', gemini_api: 'Gemini API', local_rules: '로컬 규칙' };
+const COLS = [
+  ['할 일', ['할 일', '일시정지', '내일 이어서 함']],
+  ['진행 중', ['진행 중']],
+  ['검토 (승인 대기)', ['검토(승인 대기)', '확인 필요', '오류']],
+  ['완료', ['완료']],
+];
+
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } })
+  : null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+const hm = t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+
+const S = { messages: [], cards: [], usage: [], pc: null, lastByWho: {} };
+
+// ===== 로그인 =====
+async function boot() {
+  if (!sb) { document.body.innerHTML = '<p style="padding:24px">연결 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침하세요.</p>'; return; }
+  const { data } = await sb.auth.getSession();
+  data.session ? start() : showLogin();
+}
+function showLogin() { $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+$('loginBtn').onclick = async () => {
+  $('loginErr').textContent = ''; $('loginBtn').disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pw').value });
+  $('loginBtn').disabled = false;
+  if (error) { $('loginErr').textContent = '로그인 실패: ' + (error.message === 'Invalid login credentials' ? '이메일 또는 비밀번호가 틀렸습니다' : error.message); return; }
+  start();
+};
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+// ===== 시작 =====
+let started = false;
+async function start() {
+  if (started) return; started = true;
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  await loadAll();
+  subscribe();
+  setInterval(renderHeader, 30000);
+}
+async function loadAll() {
+  const [m, c, u, p] = await Promise.all([
+    sb.from('messages').select('*').order('id', { ascending: false }).limit(150),
+    sb.from('cards').select('*').order('updated_at', { ascending: false }),
+    sb.from('engine_usage').select('*'),
+    sb.from('pc_status').select('*').limit(1),
+  ]);
+  S.messages = (m.data || []).reverse(); S.cards = c.data || []; S.usage = u.data || []; S.pc = (p.data || [])[0] || null;
+  S.messages.forEach(trackWho);
+  renderAll();
+}
+function subscribe() {
+  sb.channel('office')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: r }) => { S.messages.push(r); if (S.messages.length > 300) S.messages.shift(); trackWho(r); renderMsgs(true); renderOffice(); notify(r); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, ({ new: r }) => { upsertBy(S.cards, r, x => x.project === r.project); renderBoard(); renderOffice(); renderProjects(); renderBusy(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'engine_usage' }, ({ new: r }) => { upsertBy(S.usage, r, x => x.engine === r.engine); renderHeader(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pc_status' }, ({ new: r }) => { S.pc = r; renderHeader(); renderBusy(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'commands' }, ({ new: r }) => { if (r.status === 'received') toast('PC가 접수했습니다'); if (r.status === 'failed') toast('실패: ' + (r.result || '')); })
+    .subscribe();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadAll(); });
+}
+function upsertBy(arr, r, f) { const i = arr.findIndex(f); i >= 0 ? arr[i] = r : arr.unshift(r); }
+function trackWho(r) { if (r.who && NAME2ID[r.who]) S.lastByWho[NAME2ID[r.who]] = r; }
+
+// 앱이 열려 있을 때의 알림 (푸시 알림은 5단계)
+function notify(r) {
+  if (!['승인', '교대', '오류', '한도'].includes(r.kind) || !document.hidden) return;
+  if ('Notification' in window && Notification.permission === 'granted') new Notification('AI 오피스 · ' + r.kind, { body: r.text, icon: 'icon-192.png' });
+}
+
+// ===== 렌더 =====
+function renderAll() { renderHeader(); renderMsgs(); renderBoard(); renderOffice(); renderProjects(); renderBusy(); }
+function pcOnline() { return S.pc && Date.now() - new Date(S.pc.last_seen) < 150000; }
+function renderHeader() {
+  const on = pcOnline();
+  $('pcDot').className = 'dot' + (on ? ' on' : '');
+  $('pcState').textContent = !S.pc ? 'PC 기록 없음' : on ? 'PC 연결됨' : `PC 연결 끊김 (마지막 ${ago(S.pc.last_seen)})`;
+  const today = new Date().toISOString().slice(0, 10);
+  const chips = [`<span class="chip">대표 <b>1</b> · AI 직원 <b>${STAFF.length}</b></span>`];
+  for (const k of ['claude', 'antigravity', 'gemini_api']) {
+    const u = S.usage.find(x => x.engine === k);
+    const calls = u && u.day === today ? u.calls : 0;
+    const fb = u && u.day === today ? u.fallbacks : 0;
+    const rest = u && u.rest_until && new Date(u.rest_until) > Date.now();
+    chips.push(`<span class="chip${rest ? ' rest' : ''}">${ENGINE_LABEL[k]} <b>${calls}</b>회${fb ? ` · 교대 ${fb}` : ''} · ${rest ? '휴식 ~' + hm(u.rest_until) : '정상'}</span>`);
+  }
+  $('chips').innerHTML = chips.join('');
+}
+function msgClass(r) {
+  if (r.who === '대표') return 'me';
+  if (['오류', '한도', '정지'].includes(r.kind)) return 'alert';
+  if (r.kind === '교대') return 'swap';
+  if (['검사', '접수', '연결', '알림', '재시도', '예약'].includes(r.kind)) return 'sys';
+  return '';
+}
+function renderMsgs(scroll) {
+  const box = $('msgs'); const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = S.messages.length ? S.messages.map(r => `
+    <div class="msg ${msgClass(r)}">
+      <div class="who">${esc(r.who || r.kind)}${r.project ? ' · ' + esc(r.project) : ''}</div>
+      <div class="b">${esc(r.text)}</div>
+      <div class="t">${hm(r.created_at)}</div>
+    </div>`).join('') : '<div class="empty">아직 대화가 없습니다.<br>아래에 첫 지시를 보내보세요.</div>';
+  if (!scroll || atBottom) box.scrollTop = box.scrollHeight;
+}
+function renderProjects() {
+  const sel = $('projSel'); const cur = sel.value;
+  sel.innerHTML = '<option value="__new">+ 새 프로젝트</option>' + S.cards.map(c => `<option value="${esc(c.project)}">${esc(c.project)}</option>`).join('');
+  sel.value = cur && [...sel.options].some(o => o.value === cur) ? cur : '__new';
+  $('projNew').classList.toggle('hidden', sel.value !== '__new');
+}
+$('projSel').onchange = () => $('projNew').classList.toggle('hidden', $('projSel').value !== '__new');
+function renderBusy() {
+  const run = S.cards.find(c => c.status === '진행 중');
+  const staff = run && STAFF.find(s => s.id === run.worker);
+  $('busy').textContent = run ? `${run.project}: ${staff ? staff.name : ''} 근무 중 (${ENGINE_LABEL[run.engine] || ''})` : (pcOnline() ? '대기 중' : 'PC 꺼짐 — 명령은 PC가 켜지면 처리됩니다');
+}
+function badgeClass(s) { return s === '진행 중' ? 'run' : s === '검토(승인 대기)' ? 'wait' : s === '완료' ? 'done' : ['오류', '확인 필요'].includes(s) ? 'bad' : ''; }
+function renderBoard() {
+  if (!S.cards.length) { $('board').innerHTML = '<div class="empty">프로젝트가 없습니다.</div>'; return; }
+  $('board').innerHTML = COLS.map(([title, sts]) => {
+    const list = S.cards.filter(c => sts.includes(c.status));
+    return `<div class="col"><h3>${title} (${list.length})</h3>${list.map(c => `
+      <div class="card" data-p="${esc(c.project)}">
+        <div class="row"><span class="p">${esc(c.project)}</span><span class="sp"></span><span class="badge ${badgeClass(c.status)}">${esc(c.status)}</span></div>
+        <div class="s">${esc((c.data && c.data.task) || '').slice(0, 80)}</div>
+        <div class="s">${c.worker ? esc((STAFF.find(s => s.id === c.worker) || {}).name || c.worker) + ' · ' : ''}${esc(ENGINE_LABEL[c.engine] || '')} · ${ago(c.updated_at)}${c.data && c.data.qualityFirst ? ' · 품질 우선' : ''}</div>
+      </div>`).join('')}</div>`;
+  }).join('');
+  document.querySelectorAll('#board .card').forEach(el => el.onclick = () => openCard(el.dataset.p));
+}
+function renderOffice() {
+  const run = S.cards.find(c => c.status === '진행 중');
+  const floors = [[2, '2층 · 개발팀'], [1, '1층 · 기획팀']];
+  $('office').innerHTML = floors.map(([f, label]) => `<div class="floor"><h3>${label}</h3><div class="desks">${STAFF.filter(s => s.floor === f).map(s => {
+    const working = run && run.worker === s.id;
+    const last = S.lastByWho[s.id];
+    const eng = working ? run.engine : null;
+    const primary = s.id === 'pm' || s.id === 'designer' ? 'antigravity' : s.id === 'secretary' ? 'gemini_api' : 'claude';
+    const swapped = eng && eng !== primary;
+    const status = working ? (swapped ? '교대 근무 중' : '근무 중') : (run && run.status === '검토(승인 대기)' && s.id === 'reviewer') ? '승인 대기' : '대기';
+    return `<div class="desk${working ? ' work' : ''}" data-s="${s.id}">
+      ${working && last ? `<div class="say">${esc(last.text)}</div>` : '<div class="say" style="visibility:hidden">.</div>'}
+      <div class="ava">${s.ava}</div>
+      <div class="name">${s.name}</div><div class="role">${s.role}</div>
+      <span class="eng${swapped ? ' swap' : ''}">${working ? esc(ENGINE_LABEL[eng] || eng) + (swapped ? ' 교대' : '') : status}</span>
+    </div>`;
+  }).join('')}</div></div>`).join('') + `<div class="pcstate" style="text-align:center">직원을 누르면 최근 보고를 볼 수 있어요</div>`;
+  document.querySelectorAll('#office .desk').forEach(el => el.onclick = () => openStaff(el.dataset.s));
+}
+
+// ===== 상세 시트 =====
+function openSheet(html) { $('sheetIn').innerHTML = html; $('sheet').classList.remove('hidden'); }
+function closeSheet() { $('sheet').classList.add('hidden'); }
+$('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
+
+async function openCard(project) {
+  const c = S.cards.find(x => x.project === project); if (!c) return;
+  openSheet(`<div class="row"><b style="font-size:17px">${esc(project)}</b><span class="sp"></span><span class="badge ${badgeClass(c.status)}">${esc(c.status)}</span></div>
+    <div class="s" style="color:var(--muted);margin-top:4px">${esc(c.data?.task || '')}</div>
+    ${c.data?.reason ? `<div class="err" style="margin-top:6px">${esc(c.data.reason)}</div>` : ''}${c.data?.error ? `<div class="err" style="margin-top:6px">${esc(c.data.error.slice(0, 300))}</div>` : ''}
+    <div class="tabs" id="docTabs"><span class="pcstate">문서 불러오는 중…</span></div>
+    <pre class="doc" id="docView"></pre>
+    <div class="actions" id="cardActions"></div>`);
+  const acts = [];
+  if (c.status === '검토(승인 대기)') acts.push(`<button class="btn ok" id="aOk">승인 (main 반영)</button>`);
+  if (['검토(승인 대기)', '확인 필요', '오류', '완료'].includes(c.status)) acts.push(`<button class="btn ghost" id="aNo">반려 · 재지시</button>`);
+  if (['일시정지', '내일 이어서 함', '오류', '할 일'].includes(c.status)) acts.push(`<button class="btn ghost" id="aRe">이어서 하기</button>`);
+  acts.push(`<button class="btn ghost" id="aHist">되돌리기…</button>`, `<button class="btn ghost" id="aClose">닫기</button>`);
+  $('cardActions').innerHTML = acts.join('');
+  $('aClose').onclick = closeSheet;
+  if ($('aOk')) $('aOk').onclick = () => confirm(`${project}를 승인해 main에 반영할까요?`) && cmd('approve', { project }).then(closeSheet);
+  if ($('aNo')) $('aNo').onclick = () => { const note = prompt('무엇을 고칠까요?'); if (note && note.trim()) cmd('reject', { project, note: note.trim() }).then(closeSheet); };
+  if ($('aRe')) $('aRe').onclick = () => cmd('resume', { project }).then(closeSheet);
+  $('aHist').onclick = () => {
+    const h = (c.data?.history || []).filter(x => x.commit).reverse();
+    if (!h.length) return toast('되돌릴 기록이 없습니다');
+    $('docTabs').innerHTML = ''; $('docView').innerHTML = h.map(x => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(x.commit)} · ${esc((STAFF.find(s => s.id === x.role) || {}).name || x.role)} · ${esc(ENGINE_LABEL[x.engine] || x.engine)} · ${hm(x.at)}</span><span class="sp"></span><button class="btn ghost sm" data-c="${esc(x.commit)}">이 시점으로</button></div>`).join('');
+    $('docView').querySelectorAll('button').forEach(b => b.onclick = () => confirm(`${b.dataset.c} 시점으로 되돌릴까요? (현재 상태도 자동 저장됩니다)`) && cmd('rollback', { project, commit: b.dataset.c }).then(closeSheet));
+  };
+  const { data } = await sb.from('artifacts').select('path,content,updated_at').eq('project', project);
+  const order = ['docs/spec.md', 'docs/design.md', 'docs/review.md', 'docs/qa-report.md', 'docs/progress.md', 'docs/approvals.md'];
+  const LBL = { 'docs/spec.md': '기획서', 'docs/design.md': '디자인', 'docs/review.md': '리뷰', 'docs/qa-report.md': '테스트', 'docs/progress.md': '진행', 'docs/approvals.md': '차단된 명령' };
+  const docs = (data || []).filter(d => d.content.trim()).sort((a, b) => order.indexOf(a.path) - order.indexOf(b.path));
+  if (!docs.length) { $('docTabs').innerHTML = '<span class="pcstate">아직 문서가 없습니다</span>'; return; }
+  $('docTabs').innerHTML = docs.map((d, i) => `<button data-i="${i}" class="${i ? '' : 'on'}">${LBL[d.path] || d.path}</button>`).join('');
+  const show = i => { $('docView').textContent = docs[i].content; $('docTabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.i === i)); };
+  $('docTabs').querySelectorAll('button').forEach(b => b.onclick = () => show(+b.dataset.i));
+  show(0);
+}
+function openStaff(id) {
+  const s = STAFF.find(x => x.id === id);
+  const mine = S.messages.filter(m => m.who === s.name).slice(-15).reverse();
+  openSheet(`<div class="row"><span style="font-size:28px">${s.ava}</span><div><b>${s.name}</b><div class="pcstate">${s.role}</div></div><span class="sp"></span><button class="btn ghost sm" onclick="closeSheet()">닫기</button></div>
+    <div style="margin-top:12px">${mine.length ? mine.map(m => `<div class="msg"><div class="who">${esc(m.kind)} · ${esc(m.project || '')} · ${hm(m.created_at)}</div><div class="b">${esc(m.text)}</div></div>`).join('') : '<div class="empty">최근 보고가 없습니다</div>'}</div>`);
+}
+
+// ===== 명령 보내기 =====
+async function cmd(kind, payload) {
+  const { error } = await sb.from('commands').insert({ kind, payload });
+  if (error) { toast('전송 실패: ' + error.message); throw error; }
+  toast(pcOnline() ? '보냈습니다' : '보냈습니다 (PC가 켜지면 처리)');
+}
+function slugify(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
+$('sendBtn').onclick = async () => {
+  let text = $('text').value.trim(); if (!text) return;
+  let project = $('projSel').value === '__new' ? slugify($('projNew').value) : $('projSel').value;
+  // @이름 으로 시작하면 해당 직원에게 지시 (메시지 앞에 표시만, 배정은 비서가)
+  if ($('projSel').value === '__new' && !project) { toast('새 프로젝트 이름(영문)을 적어주세요'); $('projNew').focus(); return; }
+  $('sendBtn').disabled = true;
+  try {
+    await cmd('order', { project, message: text, quality: $('quality').checked });
+    $('text').value = ''; $('projNew').value = ''; autosize();
+  } finally { $('sendBtn').disabled = false; }
+};
+$('stopBtn').onclick = () => confirm('실행 중인 모든 AI 작업을 멈출까요? (현재 상태는 저장됩니다)') && cmd('stop', {});
+$('resumeBtn').onclick = () => cmd('resume', {});
+function autosize() { const t = $('text'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }
+$('text').addEventListener('input', autosize);
+
+// ===== 탭 =====
+document.querySelectorAll('nav button[data-v]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button[data-v]').forEach(x => x.classList.toggle('on', x === b));
+  ['chan', 'board', 'office'].forEach(v => $(v).classList.toggle('hidden', v !== b.dataset.v));
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+boot();
+</script>
+</body>
+</html>
