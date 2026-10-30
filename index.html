@@ -92,6 +92,13 @@ pre.doc{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-r
 .eng.swap{background:#fef3c7;color:#92400e}
 .say{font-size:11px;background:var(--pri);color:#fff;border-radius:8px;padding:3px 6px;margin:0 auto 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 14px;border-radius:10px;font-size:14px;z-index:20;max-width:90vw}
+.sec-h{font-weight:700;margin:14px 0 6px;font-size:14px}
+.stages{display:flex;gap:6px;flex-wrap:wrap}
+.stp{padding:5px 10px;border-radius:999px;background:var(--line);color:var(--muted);font-size:12px}
+.stp.ok{background:#dcfce7;color:#166534}
+.stp.cur{background:#dbeafe;color:#1e40af;font-weight:700}
+.previewBox{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.preview{display:block;width:100%;height:auto}
 </style>
 </head>
 <body>
@@ -360,11 +367,31 @@ function openSheet(html) { $('sheetIn').innerHTML = html; $('sheet').classList.r
 function closeSheet() { $('sheet').classList.add('hidden'); }
 $('sheet').onclick = e => { if (e.target.id === 'sheet') closeSheet(); };
 
+// 진행 단계 표시: 기록(history)에 남은 역할로 기획 → 디자인 → 개발 → 리뷰 → 완료를 보여준다
+function stageHtml(c) {
+  const roles = new Set((c.data?.history || []).map(h => h.role));
+  const finished = ['검토(승인 대기)', '완료'].includes(c.status);
+  const steps = [['pm', '기획'], ['designer', '디자인'], ['developer', '개발'], ['qa', '테스트'], ['reviewer', '리뷰']]
+    .filter(([r]) => r !== 'qa' || roles.has('qa'));
+  const firstTodo = steps.findIndex(([r]) => !roles.has(r));
+  const items = steps.map(([r, l], i) => {
+    const done = finished || roles.has(r);
+    const cur = !done && i === firstTodo;
+    return `<div class="stp ${done ? 'ok' : cur ? 'cur' : ''}">${done ? '✓' : i + 1} ${l}</div>`;
+  });
+  items.push(`<div class="stp ${c.status === '완료' ? 'ok' : finished ? 'cur' : ''}">${c.status === '완료' ? '✓' : '➜'} 승인·반영</div>`);
+  const loops = c.data?.fixLoops ? `<div class="pcstate">수정 반복 ${c.data.fixLoops}회</div>` : '';
+  return `<div class="sec-h">진행 단계</div><div class="stages">${items.join('')}</div>${loops}`;
+}
+
 async function openCard(project) {
   const c = S.cards.find(x => x.project === project); if (!c) return;
   openSheet(`<div class="row"><b style="font-size:17px">${esc(project)}</b><span class="sp"></span><span class="badge ${badgeClass(c.status)}">${esc(c.status)}</span></div>
     <div class="s" style="color:var(--muted);margin-top:4px">${esc(c.data?.task || '')}</div>
     ${c.data?.reason ? `<div class="err" style="margin-top:6px">${esc(c.data.reason)}</div>` : ''}${c.data?.error ? `<div class="err" style="margin-top:6px">${esc(c.data.error.slice(0, 300))}</div>` : ''}
+    ${stageHtml(c)}
+    ${['검토(승인 대기)', '완료'].includes(c.status) ? `<div class="sec-h">실제 적용될 화면</div><div class="previewBox"><img class="preview" src="preview/${encodeURIComponent(project)}.jpg" alt="실제 화면" onerror="this.parentNode.innerHTML='<span class=&quot;pcstate&quot;>화면 미리보기가 아직 없습니다</span>'"></div>` : ''}
+    <div class="sec-h">문서</div>
     <div class="tabs" id="docTabs"><span class="pcstate">문서 불러오는 중…</span></div>
     <pre class="doc" id="docView"></pre>
     <div class="actions" id="cardActions"></div>`);

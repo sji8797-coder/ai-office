@@ -1,5 +1,5 @@
 // 앱 껍데기만 저장(오프라인에서도 화면이 뜨게). 데이터는 항상 실시간으로 가져온다.
-const CACHE = 'ai-office-v2';
+const CACHE = 'ai-office-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
