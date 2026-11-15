@@ -1,0 +1,3 @@
+# Rokit 이 관리하는 도구 버전. 이 폴더에서 `rokit install` 을 실행하면 설치된다.
+[tools]
+rojo = "rojo-rbx/rojo@7.7.1"

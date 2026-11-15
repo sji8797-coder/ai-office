@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Rojo: serve",
+      "detail": "폴더를 열면 자동으로 실행되어, 저장한 파일을 Roblox Studio 로 실시간 동기화한다.",
+      "type": "shell",
+      "command": "rojo serve default.project.json",
+      "isBackground": true,
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Rojo: Studio 플러그인 설치",
+      "detail": "처음 한 번만 실행. Roblox Studio 에 Rojo 플러그인을 설치한다.",
+      "type": "shell",
+      "command": "rojo plugin install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Rojo: 플레이스 파일 빌드",
+      "detail": "Studio 없이 build.rbxlx 를 만들어 프로젝트 구조가 올바른지 확인한다.",
+      "type": "shell",
+      "command": "rojo build default.project.json --output build.rbxlx",
+      "problemMatcher": []
+    }
+  ]
+}

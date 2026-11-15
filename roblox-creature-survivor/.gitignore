@@ -1,0 +1,8 @@
+# Luau LSP 가 자동 생성하는 파일
+sourcemap.json
+
+# Rojo 빌드 결과물과 Studio 잠금 파일
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
